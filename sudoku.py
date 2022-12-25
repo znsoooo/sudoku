@@ -27,11 +27,47 @@ class Sudoku(wx.Panel):
             data[-1].append(num)
         return data
 
-    def GetRow(self, row):
-        return self.GetData()[row]
+    def DataToRow(self, data, r):
+        return data[r]
 
-    def GetCol(self, col):
-        return [row[col] for row in self.GetData()]
+    def DataToCol(self, data, c):
+        return [row[c] for row in data]
+
+    def DataToBlock(self, data, r, c):
+        return [row[3*c:3*c+3] for row in data[3*r:3*r+3]]
+
+    def CheckNums(self, nums):
+        for n in range(1, 10):
+            if nums.count(n) > 1:
+                return n
+
+    def CheckError(self):
+        data = self.GetData()
+        for r in range(9):
+            arr = data[r]
+            num = self.CheckNums(arr)
+            if num:
+                return f'Error: Multiple num {num} in row {r + 1}'
+        for c in range(9):
+            arr = [row[c] for row in data]
+            num = self.CheckNums(arr)
+            if num:
+                return f'Error: Multiple num {num} in column {c + 1}'
+        for r in range(3):
+            for c in range(3):
+                arr = sum([row[3*c:3*c+3] for row in data[3*r:3*r+3]], [])
+                num = self.CheckNums(arr)
+                if num:
+                    return f'Error: Multiple num {num} in block {r + 1}-{c + 1}'
+
+    def CheckFinish(self):
+        return all(sum(self.GetData(), [])) and not self.CheckError()
+
+    def AutoComplete(self):
+        data = self.GetData()
+        for row in data:
+            if len(set(row)) != len:
+                break
 
 
 class MyPanel(wx.Panel):
@@ -54,6 +90,8 @@ class MyPanel(wx.Panel):
         self.toolbar.Add(btn4, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
         self.toolbar.Add(btn5, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
         self.toolbar.Add(btn6, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        btn6.Bind(wx.EVT_BUTTON, lambda e: wx.MessageBox(self.sudoku.CheckError() or 'No error found!', 'Error'))
 
         box = wx.BoxSizer()
         box.Add(self.sudoku)
