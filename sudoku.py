@@ -139,7 +139,11 @@ class MyFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, -1, 'Sudoku')
         self.panel = MyPanel(self)
-        self.SetClientSize(self.panel.GetSize())
+        size = self.panel.GetSize()
+        self.SetClientSize(size)
+        self.SetMaxClientSize(size)
+        self.SetMinClientSize(size)
+        self.EnableMaximizeButton(False)
         self.Center()
         self.Show()
 
