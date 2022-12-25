@@ -49,6 +49,17 @@ class Sudoku(wx.Panel):
         choice = list(self.gbs.GetChildren())[id].GetWindow()
         choice.SetSelection(n)
 
+    def SetLock(self):
+        for item in self.gbs.GetChildren():
+            choice = item.GetWindow()
+            if choice.GetStringSelection():
+                choice.Disable()
+
+    def SetUnlock(self):
+        for item in self.gbs.GetChildren():
+            choice = item.GetWindow()
+            choice.Enable()
+
     def CheckError(self):
         for r in range(9):
             arr = self.data[r]
@@ -113,6 +124,8 @@ class MyPanel(wx.Panel):
         self.toolbar.Add(btn5, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
         self.toolbar.Add(btn6, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
+        btn1.Bind(wx.EVT_BUTTON, lambda e: self.sudoku.SetLock())
+        btn2.Bind(wx.EVT_BUTTON, lambda e: self.sudoku.SetUnlock())
         btn5.Bind(wx.EVT_BUTTON, lambda e: self.sudoku.AutoComplete())
         btn6.Bind(wx.EVT_BUTTON, lambda e: wx.MessageBox(self.sudoku.CheckError() or 'No error found!', 'Error'))
 
