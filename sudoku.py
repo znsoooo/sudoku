@@ -1,16 +1,24 @@
 import wx
 
 
+def repeat(nums):
+    for n in range(1, 10):
+        if nums.count(n) > 1:
+            return n
+
+
 class Sudoku(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
         choices = [''] + list('123456789')
         self.gbs = wx.GridBagSizer(vgap=5, hgap=5)
+        self.data = [[0] * 9] * 9
 
         for r in range(9):
             for c in range(9):
                 choice = wx.Choice(self, choices=choices)
+                choice.Bind(wx.EVT_CHOICE, lambda e: self.GetData())
                 self.gbs.Add(choice, (r, c), flag=wx.EXPAND)
 
         box = wx.BoxSizer()
@@ -25,48 +33,62 @@ class Sudoku(wx.Panel):
             if i % 9 == 0:
                 data.append([])
             data[-1].append(num)
-        return data
+        self.data = data
 
-    def DataToRow(self, data, r):
-        return data[r]
+    def SetData(self, data):
+        self.data = data
+        children = iter(self.gbs.GetChildren())
+        for r in range(9):
+            for c in range(9):
+                choice = next(children).GetWindow()
+                choice.SetSelection(data[r][c])
 
-    def DataToCol(self, data, c):
-        return [row[c] for row in data]
-
-    def DataToBlock(self, data, r, c):
-        return [row[3*c:3*c+3] for row in data[3*r:3*r+3]]
-
-    def CheckNums(self, nums):
-        for n in range(1, 10):
-            if nums.count(n) > 1:
-                return n
+    def SetCell(self, r, c, n):
+        self.data[r][c] = n
+        id = r * 9 + c
+        choice = list(self.gbs.GetChildren())[id].GetWindow()
+        choice.SetSelection(n)
 
     def CheckError(self):
-        data = self.GetData()
         for r in range(9):
-            arr = data[r]
-            num = self.CheckNums(arr)
+            arr = self.data[r]
+            num = repeat(arr)
             if num:
                 return f'Error: Multiple num {num} in row {r + 1}'
         for c in range(9):
-            arr = [row[c] for row in data]
-            num = self.CheckNums(arr)
+            arr = [row[c] for row in self.data]
+            num = repeat(arr)
             if num:
                 return f'Error: Multiple num {num} in column {c + 1}'
         for r in range(3):
             for c in range(3):
-                arr = sum([row[3*c:3*c+3] for row in data[3*r:3*r+3]], [])
-                num = self.CheckNums(arr)
+                arr = sum([row[3*c:3*c+3] for row in self.data[3*r:3*r+3]], [])
+                num = repeat(arr)
                 if num:
                     return f'Error: Multiple num {num} in block {r + 1}-{c + 1}'
 
     def CheckFinish(self):
-        return all(sum(self.GetData(), [])) and not self.CheckError()
+        return all(sum(self.data, [])) and not self.CheckError()
 
     def AutoComplete(self):
-        data = self.GetData()
-        for row in data:
-            if len(set(row)) != len:
+        if self.CheckError():
+            return "Exist error, can't auto complete."
+        while True:
+            exist = False
+            for r in range(9):
+                for c in range(9):
+                    if not self.data[r][c]:
+                        row = self.data[r]
+                        col = [row[c] for row in self.data]
+                        r1 = r // 3 * 3
+                        c1 = c // 3 * 3
+                        block = sum([row[c1:c1+3] for row in self.data[r1:r1+3]], [])
+                        choices = set(range(1, 10)) - set(row + col + block)
+                        print((r, c, choices))
+                        if len(choices) == 1:
+                            exist = True
+                            self.SetCell(r, c, choices.pop())
+            if not exist:
                 break
 
 
@@ -91,6 +113,7 @@ class MyPanel(wx.Panel):
         self.toolbar.Add(btn5, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
         self.toolbar.Add(btn6, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
+        btn5.Bind(wx.EVT_BUTTON, lambda e: self.sudoku.AutoComplete())
         btn6.Bind(wx.EVT_BUTTON, lambda e: wx.MessageBox(self.sudoku.CheckError() or 'No error found!', 'Error'))
 
         box = wx.BoxSizer()
