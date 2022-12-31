@@ -130,14 +130,14 @@ class Sudoku(wx.Panel):
 
     def SetLock(self):
         for item in self.gbs.GetChildren():
-            choice = item.GetWindow()
-            if choice.GetStringSelection():
-                choice.Disable()
+            btn = item.GetWindow()
+            if btn.GetLabel():
+                btn.Disable()
 
     def SetUnlock(self):
         for item in self.gbs.GetChildren():
-            choice = item.GetWindow()
-            choice.Enable()
+            btn = item.GetWindow()
+            btn.Enable()
 
     def OnSetNum(self, n):
         print(n)
