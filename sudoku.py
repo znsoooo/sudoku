@@ -165,7 +165,6 @@ class MyPanel(wx.Panel):
 
         self.sudoku = Sudoku(self)
         self.numpad = NumPad(self)
-        self.toolbar = wx.BoxSizer(wx.VERTICAL)
 
         self.OnSetNum = self.sudoku.OnSetNum
 
@@ -176,14 +175,15 @@ class MyPanel(wx.Panel):
         btn5 = wx.Button(self, -1, '自动')
         btn6 = wx.Button(self, -1, '检查')
 
-        self.toolbar.Add(self.numpad, 0, wx.EXPAND)
-        self.toolbar.Add(0, 1, wx.EXPAND)
-        self.toolbar.Add(btn1, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
-        self.toolbar.Add(btn2, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
-        self.toolbar.Add(btn3, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
-        self.toolbar.Add(btn4, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
-        self.toolbar.Add(btn5, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
-        self.toolbar.Add(btn6, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        toolbar = wx.BoxSizer(wx.VERTICAL)
+        toolbar.Add(self.numpad, 0, wx.EXPAND)
+        toolbar.Add(0, 1, wx.EXPAND)
+        toolbar.Add(btn1, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        toolbar.Add(btn2, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        toolbar.Add(btn3, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        toolbar.Add(btn4, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        toolbar.Add(btn5, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        toolbar.Add(btn6, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
         btn1.Bind(wx.EVT_BUTTON, lambda e: self.sudoku.SetLock())
         btn2.Bind(wx.EVT_BUTTON, lambda e: self.sudoku.SetUnlock())
@@ -192,7 +192,7 @@ class MyPanel(wx.Panel):
 
         box = wx.BoxSizer()
         box.Add(self.sudoku)
-        box.Add(self.toolbar, 0, wx.ALL | wx.EXPAND)
+        box.Add(toolbar, 0, wx.ALL | wx.EXPAND)
         self.SetSizerAndFit(box)
 
 
