@@ -146,7 +146,36 @@ class Sudoku(wx.Panel):
                 btn.SetLabel(str(n or ''))
                 r, c = divmod(i, 9)
                 self.data[r][c] = n
-                return
+                break
+
+        if self.hint:
+            for item in self.gbs.GetChildren():
+                btn = item.GetWindow()
+                btn.SetBackgroundColour('#E0E0E0')
+
+        if self.hint and n:
+            for r in range(9):
+                row = self.data[r]
+                if n in row:
+                    for c in range(9):
+                        btn = wx.FindWindowById(200 + 9 * r + c, self)
+                        btn.SetBackgroundColour('#D0F0D0')
+
+            for c in range(9):
+                col = [row[c] for row in self.data]
+                if n in col:
+                    for r in range(9):
+                        btn = wx.FindWindowById(200 + 9 * r + c, self)
+                        btn.SetBackgroundColour('#D0F0D0')
+
+            for r1 in range(0, 9, 3):
+                for c1 in range(0, 9, 3):
+                    block = sum([row[c1:c1+3] for row in self.data[r1:r1+3]], [])
+                    if n in block:
+                        for r in range(r1, r1 + 3):
+                            for c in range(c1, c1 + 3):
+                                btn = wx.FindWindowById(200 + 9 * r + c, self)
+                                btn.SetBackgroundColour('#D0F0D0')
 
     def CheckError(self):
         for r in range(9):
