@@ -64,6 +64,7 @@ class Sudoku(wx.Panel):
         self.parent = parent
 
         self.hint = True
+        self.prev = None
         self.data = [[0] * 9 for i in range(9)]
 
         self.gbs = wx.GridBagSizer()
@@ -96,17 +97,16 @@ class Sudoku(wx.Panel):
         ])
 
     def OnButton(self, evt):
-        n1 = evt.GetId() - 200
+        if self.prev:
+            item = wx.FindWindowById(self.prev, self)
+            item.SetValue(False)
+        self.prev = evt.GetSelection() and evt.GetId()
+
         btn = evt.GetEventObject()
         self.parent.SetSelection(int(btn.GetLabel() or 0))
 
-        for n2 in range(9 * 9):
-            if n1 != n2:
-                btn = wx.FindWindowById(200 + n2, self)
-                btn.SetValue(False)
-
         if self.hint and evt.GetSelection():
-            r, c = divmod(n1, 9)
+            r, c = divmod(evt.GetId() - 200, 9)
             row = self.data[r][:]
             col = [row[c] for row in self.data]
             r1 = r // 3 * 3
@@ -140,13 +140,9 @@ class Sudoku(wx.Panel):
             btn.Enable()
 
     def OnSetNum(self, n):
-        for i, item in enumerate(self.gbs.GetChildren()):
-            btn = item.GetWindow()
-            if btn.GetValue():
-                btn.SetLabel(str(n or ''))
-                r, c = divmod(i, 9)
-                self.data[r][c] = n
-                break
+        if self.prev:
+            r, c = divmod(self.prev - 200, 9)
+            self.SetCell(r, c, n)
 
         if self.hint:
             for item in self.gbs.GetChildren():
