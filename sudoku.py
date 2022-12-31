@@ -11,6 +11,43 @@ def repeat(nums):
             return n
 
 
+class NumPad(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+
+        self.parent = parent
+        self.gbs = wx.GridBagSizer(vgap=5, hgap=5)
+
+        for r in range(3):
+            for c in range(3):
+                n = 3 * r + c + 1
+                btn = wx.ToggleButton(self, 100 + n, str(n), size=(30, -1))
+                btn.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
+                self.gbs.Add(btn, (r, c), flag=wx.EXPAND)
+
+        box = wx.BoxSizer()
+        box.Add(self.gbs, 1, wx.EXPAND | wx.ALL, 5)
+        self.SetSizer(box)
+
+    def OnButton(self, evt):
+        n1 = evt.GetId() - 100
+        for n2 in range(1, 10):
+            if n1 != n2:
+                btn = wx.FindWindowById(100 + n2, self)
+                btn.SetValue(False)
+        self.parent.OnSetNum(evt.GetSelection() and n1)
+
+    def SetSelection(self, n):
+        for n2 in range(1, 10):
+            btn = wx.FindWindowById(100 + n2, self)
+            btn.SetValue(n == n2)
+
+    def SetEnables(self, ns):
+        for n2 in range(1, 10):
+            btn = wx.FindWindowById(100 + n2, self)
+            btn.Enable(n2 in ns)
+
+
 class Sudoku(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -76,6 +113,9 @@ class Sudoku(wx.Panel):
             choice = item.GetWindow()
             choice.Enable()
 
+    def OnSetNum(self, n):
+        print(n)
+
     def CheckError(self):
         for r in range(9):
             arr = self.data[r]
@@ -122,8 +162,12 @@ class Sudoku(wx.Panel):
 class MyPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
+
         self.sudoku = Sudoku(self)
+        self.numpad = NumPad(self)
         self.toolbar = wx.BoxSizer(wx.VERTICAL)
+
+        self.OnSetNum = self.sudoku.OnSetNum
 
         btn1 = wx.Button(self, -1, '锁定')
         btn2 = wx.Button(self, -1, '解锁')
@@ -132,6 +176,7 @@ class MyPanel(wx.Panel):
         btn5 = wx.Button(self, -1, '自动')
         btn6 = wx.Button(self, -1, '检查')
 
+        self.toolbar.Add(self.numpad, 0, wx.EXPAND)
         self.toolbar.Add(0, 1, wx.EXPAND)
         self.toolbar.Add(btn1, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
         self.toolbar.Add(btn2, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
