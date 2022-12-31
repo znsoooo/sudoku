@@ -52,15 +52,18 @@ class Sudoku(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
-        choices = [''] + list('123456789')
-        self.gbs = wx.GridBagSizer(vgap=5, hgap=5)
+        self.parent = parent
+
+        self.hint = True
         self.data = [[0] * 9] * 9
+
+        self.gbs = wx.GridBagSizer(vgap=5, hgap=5)
 
         for r in range(9):
             for c in range(9):
-                choice = wx.Choice(self, choices=choices)
-                choice.Bind(wx.EVT_CHOICE, lambda e: self.GetData())
-                self.gbs.Add(choice, (r, c), flag=wx.EXPAND)
+                btn = wx.ToggleButton(self, 200 + 9 * r + c, size=(30, -1))
+                btn.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
+                self.gbs.Add(btn, (r, c), flag=wx.EXPAND)
 
         box = wx.BoxSizer()
         box.Add(self.gbs, 1, wx.EXPAND | wx.ALL, 5)
@@ -78,6 +81,29 @@ class Sudoku(wx.Panel):
             [0, 0, 0, 2, 0, 0, 0, 0, 6],
         ])
 
+    def OnButton(self, evt):
+        n1 = evt.GetId() - 200
+        btn = evt.GetEventObject()
+        self.parent.SetSelection(int(btn.GetLabel() or 0))
+
+        for n2 in range(9 * 9):
+            if n1 != n2:
+                btn = wx.FindWindowById(200 + n2, self)
+                btn.SetValue(False)
+
+        if self.hint and evt.GetSelection():
+            r, c = divmod(n1, 9)
+            row = self.data[r][:]
+            col = [row[c] for row in self.data]
+            r1 = r // 3 * 3
+            c1 = c // 3 * 3
+            block = sum([row[c1:c1 + 3] for row in self.data[r1:r1 + 3]], [])
+            for arr in [row, col, block]:
+                arr.remove(self.data[r][c])
+            self.parent.SetEnables(set(range(1, 10)) - set(row + col + block))
+        else:
+            self.parent.SetEnables(list(range(1, 10)))
+
     def GetData(self):
         data = []
         for i, item in enumerate(self.gbs.GetChildren()):
@@ -94,7 +120,7 @@ class Sudoku(wx.Panel):
         for r in range(9):
             for c in range(9):
                 choice = next(children).GetWindow()
-                choice.SetSelection(data[r][c])
+                choice.SetLabel(str(data[r][c] or ''))
 
     def SetCell(self, r, c, n):
         self.data[r][c] = n
@@ -167,6 +193,8 @@ class MyPanel(wx.Panel):
         self.numpad = NumPad(self)
 
         self.OnSetNum = self.sudoku.OnSetNum
+        self.SetEnables = self.numpad.SetEnables
+        self.SetSelection = self.numpad.SetSelection
 
         btn1 = wx.Button(self, -1, '锁定')
         btn2 = wx.Button(self, -1, '解锁')
