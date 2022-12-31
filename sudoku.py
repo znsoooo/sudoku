@@ -11,6 +11,15 @@ def repeat(nums):
             return n
 
 
+class Border(wx.Panel):
+    def __init__(self, parent, width):
+        wx.Panel.__init__(self, parent)
+        box = wx.BoxSizer()
+        box.Add((width, width), 1, wx.EXPAND)
+        self.SetSizer(box)
+        self.SetBackgroundColour('#000000')
+
+
 class NumPad(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -21,7 +30,7 @@ class NumPad(wx.Panel):
         for r in range(3):
             for c in range(3):
                 n = 3 * r + c + 1
-                btn = wx.ToggleButton(self, 100 + n, str(n), size=(30, -1))
+                btn = wx.ToggleButton(self, 100 + n, str(n), size=(30, 30))
                 btn.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
                 self.gbs.Add(btn, (r, c), flag=wx.EXPAND)
 
@@ -57,13 +66,18 @@ class Sudoku(wx.Panel):
         self.hint = True
         self.data = [[0] * 9 for i in range(9)]
 
-        self.gbs = wx.GridBagSizer(vgap=5, hgap=5)
+        self.gbs = wx.GridBagSizer()
 
-        for r in range(9):
-            for c in range(9):
-                btn = wx.ToggleButton(self, 200 + 9 * r + c, size=(30, -1))
-                btn.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
-                self.gbs.Add(btn, (r, c), flag=wx.EXPAND)
+        id = 200
+        for r in range(13):
+            for c in range(13):
+                if r in (0, 4, 8, 12) or c in (0, 4, 8, 12):
+                    item = Border(self, 3)
+                else:
+                    item = wx.ToggleButton(self, id, size=(30, 30))
+                    item.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
+                    id += 1
+                self.gbs.Add(item, (r, c), flag=wx.EXPAND)
 
         box = wx.BoxSizer()
         box.Add(self.gbs, 1, wx.EXPAND | wx.ALL, 5)
@@ -116,11 +130,10 @@ class Sudoku(wx.Panel):
 
     def SetData(self, data):
         self.data = data
-        children = iter(self.gbs.GetChildren())
         for r in range(9):
             for c in range(9):
-                choice = next(children).GetWindow()
-                choice.SetLabel(str(data[r][c] or ''))
+                item = wx.FindWindowById(200 + 9 * r + c, self)
+                item.SetLabel(str(data[r][c] or ''))
 
     def SetCell(self, r, c, n):
         self.data[r][c] = n
