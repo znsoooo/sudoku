@@ -55,7 +55,7 @@ class Sudoku(wx.Panel):
         self.parent = parent
 
         self.hint = True
-        self.data = [[0] * 9] * 9
+        self.data = [[0] * 9 for i in range(9)]
 
         self.gbs = wx.GridBagSizer(vgap=5, hgap=5)
 
