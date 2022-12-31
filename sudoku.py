@@ -118,28 +118,15 @@ class Sudoku(wx.Panel):
         else:
             self.parent.SetEnables(list(range(1, 10)))
 
-    def GetData(self):
-        data = []
-        for i, item in enumerate(self.gbs.GetChildren()):
-            choice = item.GetWindow()
-            num = int(choice.GetStringSelection() or 0)
-            if i % 9 == 0:
-                data.append([])
-            data[-1].append(num)
-        self.data = data
-
-    def SetData(self, data):
-        self.data = data
-        for r in range(9):
-            for c in range(9):
-                item = wx.FindWindowById(200 + 9 * r + c, self)
-                item.SetLabel(str(data[r][c] or ''))
-
     def SetCell(self, r, c, n):
         self.data[r][c] = n
-        id = r * 9 + c
-        choice = list(self.gbs.GetChildren())[id].GetWindow()
-        choice.SetSelection(n)
+        item = wx.FindWindowById(200 + 9 * r + c, self)
+        item.SetLabel(str(n or ''))
+
+    def SetData(self, data):
+        for r in range(9):
+            for c in range(9):
+                self.SetCell(r, c, data[r][c])
 
     def SetLock(self):
         for item in self.gbs.GetChildren():
