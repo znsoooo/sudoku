@@ -140,7 +140,13 @@ class Sudoku(wx.Panel):
             btn.Enable()
 
     def OnSetNum(self, n):
-        print(n)
+        for i, item in enumerate(self.gbs.GetChildren()):
+            btn = item.GetWindow()
+            if btn.GetValue():
+                btn.SetLabel(str(n or ''))
+                r, c = divmod(i, 9)
+                self.data[r][c] = n
+                return
 
     def CheckError(self):
         for r in range(9):
