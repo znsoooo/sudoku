@@ -27,13 +27,18 @@ class Sudoku:
         return sum([row[c1:c1+3] for row in self.data[r1:r1+3]], [])
 
 
+COLOUR_GRAY  = '#E0E0E0'
+COLOUR_BLACK = '#000000'
+COLOUR_GREEN = '#D0F0D0'
+
+
 class Border(wx.Panel):
     def __init__(self, parent, width):
         wx.Panel.__init__(self, parent)
         box = wx.BoxSizer()
         box.Add((width, width), 1, wx.EXPAND)
         self.SetSizer(box)
-        self.SetBackgroundColour('#000000')
+        self.SetBackgroundColour(COLOUR_BLACK)
 
 
 class NumPad(wx.Panel):
@@ -135,6 +140,10 @@ class NumBox(wx.Panel):
         item = wx.FindWindowById(200 + 9 * r + c, self)
         item.SetLabel(str(n or ''))
 
+    def SetCellColour(self, r, c, colour):
+        item = wx.FindWindowById(200 + 9 * r + c, self)
+        item.SetBackgroundColour(colour)
+
     def SetData(self, data):
         for r in range(9):
             for c in range(9):
@@ -157,30 +166,27 @@ class NumBox(wx.Panel):
             self.SetCell(r, c, n)
 
         if self.hint:
-            for item in self.gbs.GetChildren():
-                btn = item.GetWindow()
-                btn.SetBackgroundColour('#E0E0E0')
+            for r in range(9):
+                for c in range(9):
+                    self.SetCellColour(r, c, COLOUR_GRAY)
 
         if self.hint and n:
             for r in range(9):
                 if n in self.sudoku.row(r):
                     for c in range(9):
-                        btn = wx.FindWindowById(200 + 9 * r + c, self)
-                        btn.SetBackgroundColour('#D0F0D0')
+                        self.SetCellColour(r, c, COLOUR_GREEN)
 
             for c in range(9):
                 if n in self.sudoku.col(c):
                     for r in range(9):
-                        btn = wx.FindWindowById(200 + 9 * r + c, self)
-                        btn.SetBackgroundColour('#D0F0D0')
+                        self.SetCellColour(r, c, COLOUR_GREEN)
 
             for r1 in range(0, 9, 3):
                 for c1 in range(0, 9, 3):
                     if n in self.sudoku.block(r1, c1):
                         for r in range(r1, r1 + 3):
                             for c in range(c1, c1 + 3):
-                                btn = wx.FindWindowById(200 + 9 * r + c, self)
-                                btn.SetBackgroundColour('#D0F0D0')
+                                self.SetCellColour(r, c, COLOUR_GREEN)
 
     def CheckError(self):
         for r in range(9):
