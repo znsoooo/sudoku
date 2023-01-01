@@ -5,12 +5,6 @@
 import wx
 
 
-def repeat(nums):
-    for n in range(1, 10):
-        if nums.count(n) > 1:
-            return n
-
-
 class Sudoku:
     def __init__(self, data=None):
         self.data = data or [[0] * 9 for i in range(9)]
@@ -25,6 +19,47 @@ class Sudoku:
         r1 = r // 3 * 3
         c1 = c // 3 * 3
         return sum([row[c1:c1+3] for row in self.data[r1:r1+3]], [])
+
+    def repeat(self, ns):
+        for n in range(1, 10):
+            if ns.count(n) > 1:
+                return n
+
+    def error(self):
+        for r in range(9):
+            num = self.repeat(self.row(r))
+            if num:
+                return f'Error: Multiple num {num} in row {r + 1}'
+        for c in range(9):
+            num = self.repeat(self.col(c))
+            if num:
+                return f'Error: Multiple num {num} in column {c + 1}'
+        for r in range(3):
+            for c in range(3):
+                num = self.repeat(self.block(r * 3, c * 3))
+                if num:
+                    return f'Error: Multiple num {num} in block {r + 1}-{c + 1}'
+
+    def finished(self):
+        return all(sum(self.data, [])) and not self.error()
+
+    def complete(self):
+        cnt = 0
+        while True:
+            exist = False
+            for r in range(9):
+                for c in range(9):
+                    if not self.data[r][c]:
+                        nums = self.row(r) + self.col(c) + self.block(r, c)
+                        choices = set(range(1, 10)) - set(nums)
+                        print((r, c, choices))
+                        if len(choices) == 1:
+                            cnt += 1
+                            exist = True
+                            self.data[r][c] = choices.pop()
+            if not exist:
+                break
+        return cnt
 
 
 COLOUR_GRAY  = '#E0E0E0'
@@ -188,43 +223,11 @@ class NumBox(wx.Panel):
                             for c in range(c1, c1 + 3):
                                 self.SetCellColour(r, c, COLOUR_GREEN)
 
-    def CheckError(self):
-        for r in range(9):
-            arr = self.sudoku.row(r)
-            num = repeat(arr)
-            if num:
-                return f'Error: Multiple num {num} in row {r + 1}'
-        for c in range(9):
-            arr = self.sudoku.col(c)
-            num = repeat(arr)
-            if num:
-                return f'Error: Multiple num {num} in column {c + 1}'
-        for r in range(3):
-            for c in range(3):
-                arr = self.sudoku.block(r * 3, c * 3)
-                num = repeat(arr)
-                if num:
-                    return f'Error: Multiple num {num} in block {r + 1}-{c + 1}'
-
-    def CheckFinish(self):
-        return all(sum(self.sudoku.data, [])) and not self.CheckError()
-
     def AutoComplete(self):
-        if self.CheckError():
+        if self.sudoku.error():
             return "Exist error, can't auto complete."
-        while True:
-            exist = False
-            for r in range(9):
-                for c in range(9):
-                    if not self.sudoku.data[r][c]:
-                        nums = self.sudoku.row(r) + self.sudoku.col(c) + self.sudoku.block(r, c)
-                        choices = set(range(1, 10)) - set(nums)
-                        print((r, c, choices))
-                        if len(choices) == 1:
-                            exist = True
-                            self.SetCell(r, c, choices.pop())
-            if not exist:
-                break
+        if self.sudoku.complete():
+            self.SetData(self.sudoku.data)
 
 
 class MyPanel(wx.Panel):
@@ -259,7 +262,7 @@ class MyPanel(wx.Panel):
         btn1.Bind(wx.EVT_BUTTON, lambda e: self.numbox.SetLock())
         btn2.Bind(wx.EVT_BUTTON, lambda e: self.numbox.SetUnlock())
         btn5.Bind(wx.EVT_BUTTON, lambda e: self.numbox.AutoComplete())
-        btn6.Bind(wx.EVT_BUTTON, lambda e: wx.MessageBox(self.numbox.CheckError() or 'No error found!', 'Error'))
+        btn6.Bind(wx.EVT_BUTTON, lambda e: wx.MessageBox(self.sudoku.error() or 'No error found!', 'Error'))
 
         box = wx.BoxSizer()
         box.Add(self.numbox)
