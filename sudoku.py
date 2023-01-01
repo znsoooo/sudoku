@@ -11,6 +11,22 @@ def repeat(nums):
             return n
 
 
+class Sudoku:
+    def __init__(self, data=None):
+        self.data = data or [[0] * 9 for i in range(9)]
+
+    def row(self, r):
+        return self.data[r][:]
+
+    def col(self, c):
+        return [row[c] for row in self.data]
+
+    def block(self, r, c):
+        r1 = r // 3 * 3
+        c1 = c // 3 * 3
+        return sum([row[c1:c1+3] for row in self.data[r1:r1+3]], [])
+
+
 class Border(wx.Panel):
     def __init__(self, parent, width):
         wx.Panel.__init__(self, parent)
@@ -57,7 +73,7 @@ class NumPad(wx.Panel):
             btn.Enable(n2 in ns)
 
 
-class Sudoku(wx.Panel):
+class NumBox(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
@@ -65,7 +81,7 @@ class Sudoku(wx.Panel):
 
         self.hint = True
         self.prev = None
-        self.data = [[0] * 9 for i in range(9)]
+        self.sudoku = Sudoku()
 
         self.gbs = wx.GridBagSizer()
 
@@ -107,19 +123,15 @@ class Sudoku(wx.Panel):
 
         if self.hint and evt.GetSelection():
             r, c = divmod(evt.GetId() - 200, 9)
-            row = self.data[r][:]
-            col = [row[c] for row in self.data]
-            r1 = r // 3 * 3
-            c1 = c // 3 * 3
-            block = sum([row[c1:c1 + 3] for row in self.data[r1:r1 + 3]], [])
-            for arr in [row, col, block]:
-                arr.remove(self.data[r][c])
-            self.parent.SetEnables(set(range(1, 10)) - set(row + col + block))
+            nums = self.sudoku.row(r) + self.sudoku.col(c) + self.sudoku.block(r, c)
+            for i in range(3):
+                nums.remove(self.sudoku.data[r][c])
+            self.parent.SetEnables(set(range(1, 10)) - set(nums))
         else:
             self.parent.SetEnables(list(range(1, 10)))
 
     def SetCell(self, r, c, n):
-        self.data[r][c] = n
+        self.sudoku.data[r][c] = n
         item = wx.FindWindowById(200 + 9 * r + c, self)
         item.SetLabel(str(n or ''))
 
@@ -151,23 +163,20 @@ class Sudoku(wx.Panel):
 
         if self.hint and n:
             for r in range(9):
-                row = self.data[r]
-                if n in row:
+                if n in self.sudoku.row(r):
                     for c in range(9):
                         btn = wx.FindWindowById(200 + 9 * r + c, self)
                         btn.SetBackgroundColour('#D0F0D0')
 
             for c in range(9):
-                col = [row[c] for row in self.data]
-                if n in col:
+                if n in self.sudoku.col(c):
                     for r in range(9):
                         btn = wx.FindWindowById(200 + 9 * r + c, self)
                         btn.SetBackgroundColour('#D0F0D0')
 
             for r1 in range(0, 9, 3):
                 for c1 in range(0, 9, 3):
-                    block = sum([row[c1:c1+3] for row in self.data[r1:r1+3]], [])
-                    if n in block:
+                    if n in self.sudoku.block(r1, c1):
                         for r in range(r1, r1 + 3):
                             for c in range(c1, c1 + 3):
                                 btn = wx.FindWindowById(200 + 9 * r + c, self)
@@ -175,24 +184,24 @@ class Sudoku(wx.Panel):
 
     def CheckError(self):
         for r in range(9):
-            arr = self.data[r]
+            arr = self.sudoku.row(r)
             num = repeat(arr)
             if num:
                 return f'Error: Multiple num {num} in row {r + 1}'
         for c in range(9):
-            arr = [row[c] for row in self.data]
+            arr = self.sudoku.col(c)
             num = repeat(arr)
             if num:
                 return f'Error: Multiple num {num} in column {c + 1}'
         for r in range(3):
             for c in range(3):
-                arr = sum([row[3*c:3*c+3] for row in self.data[3*r:3*r+3]], [])
+                arr = self.sudoku.block(r * 3, c * 3)
                 num = repeat(arr)
                 if num:
                     return f'Error: Multiple num {num} in block {r + 1}-{c + 1}'
 
     def CheckFinish(self):
-        return all(sum(self.data, [])) and not self.CheckError()
+        return all(sum(self.sudoku.data, [])) and not self.CheckError()
 
     def AutoComplete(self):
         if self.CheckError():
@@ -201,13 +210,9 @@ class Sudoku(wx.Panel):
             exist = False
             for r in range(9):
                 for c in range(9):
-                    if not self.data[r][c]:
-                        row = self.data[r]
-                        col = [row[c] for row in self.data]
-                        r1 = r // 3 * 3
-                        c1 = c // 3 * 3
-                        block = sum([row[c1:c1+3] for row in self.data[r1:r1+3]], [])
-                        choices = set(range(1, 10)) - set(row + col + block)
+                    if not self.sudoku.data[r][c]:
+                        nums = self.sudoku.row(r) + self.sudoku.col(c) + self.sudoku.block(r, c)
+                        choices = set(range(1, 10)) - set(nums)
                         print((r, c, choices))
                         if len(choices) == 1:
                             exist = True
@@ -221,9 +226,10 @@ class MyPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.sudoku = Sudoku(self)
+        self.numbox = NumBox(self)
         self.numpad = NumPad(self)
 
-        self.OnSetNum = self.sudoku.OnSetNum
+        self.OnSetNum = self.numbox.OnSetNum
         self.SetEnables = self.numpad.SetEnables
         self.SetSelection = self.numpad.SetSelection
 
@@ -244,13 +250,13 @@ class MyPanel(wx.Panel):
         toolbar.Add(btn5, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 5)
         toolbar.Add(btn6, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 5)
 
-        btn1.Bind(wx.EVT_BUTTON, lambda e: self.sudoku.SetLock())
-        btn2.Bind(wx.EVT_BUTTON, lambda e: self.sudoku.SetUnlock())
-        btn5.Bind(wx.EVT_BUTTON, lambda e: self.sudoku.AutoComplete())
-        btn6.Bind(wx.EVT_BUTTON, lambda e: wx.MessageBox(self.sudoku.CheckError() or 'No error found!', 'Error'))
+        btn1.Bind(wx.EVT_BUTTON, lambda e: self.numbox.SetLock())
+        btn2.Bind(wx.EVT_BUTTON, lambda e: self.numbox.SetUnlock())
+        btn5.Bind(wx.EVT_BUTTON, lambda e: self.numbox.AutoComplete())
+        btn6.Bind(wx.EVT_BUTTON, lambda e: wx.MessageBox(self.numbox.CheckError() or 'No error found!', 'Error'))
 
         box = wx.BoxSizer()
-        box.Add(self.sudoku)
+        box.Add(self.numbox)
         box.Add(toolbar, 0, wx.ALL | wx.EXPAND)
         self.SetSizerAndFit(box)
 
