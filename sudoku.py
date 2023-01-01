@@ -177,6 +177,7 @@ class NumBox(wx.Panel):
             [0, 0, 3, 7, 0, 0, 0, 8, 0],
             [0, 0, 0, 2, 0, 0, 0, 0, 6],
         ])
+        self.SetLock()
 
     def OnButton(self, evt):
         if self.prev:
