@@ -20,6 +20,20 @@ class Sudoku:
         c1 = c // 3 * 3
         return sum([row[c1:c1+3] for row in self.data[r1:r1+3]], [])
 
+    def block_rc(self, r, c):
+        r1 = r // 3 * 3
+        c1 = c // 3 * 3
+        for r in range(r1, r1 + 3):
+            for c in range(c1, c1 + 3):
+                yield r, c
+
+    def choices(self, r, c):
+        if not self.data[r][c]:
+            nums = self.row(r) + self.col(c) + self.block(r, c)
+            return sorted(set(range(1, 10)) - set(nums))
+        else:
+            return []
+
     def repeat(self, ns):
         for n in range(1, 10):
             if ns.count(n) > 1:
@@ -50,13 +64,25 @@ class Sudoku:
             for r in range(9):
                 for c in range(9):
                     if not self.data[r][c]:
-                        nums = self.row(r) + self.col(c) + self.block(r, c)
-                        choices = set(range(1, 10)) - set(nums)
-                        print((r, c, choices))
+                        choices = self.choices(r, c)
                         if len(choices) == 1:
                             cnt += 1
                             exist = True
-                            self.data[r][c] = choices.pop()
+                            self.data[r][c] = choices[0]
+                        else:
+                            for n in self.choices(r, c):
+                                if sum(n in self.choices(r1, c) for r1 in range(9)) == 1:
+                                    cnt += 1
+                                    exist = True
+                                    self.data[r][c] = n
+                                elif sum(n in self.choices(r, c1) for c1 in range(9)) == 1:
+                                    cnt += 1
+                                    exist = True
+                                    self.data[r][c] = n
+                                elif sum(n in self.choices(r1, c1) for r1, c1 in self.block_rc(r, c)) == 1:
+                                    cnt += 1
+                                    exist = True
+                                    self.data[r][c] = n
             if not exist:
                 break
         return cnt
