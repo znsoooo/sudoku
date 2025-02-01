@@ -140,14 +140,14 @@ class NumPad(wx.Panel):
 
 
 class NumBox(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, sudoku):
         wx.Panel.__init__(self, parent)
 
         self.parent = parent
 
         self.hint = True
         self.prev = None
-        self.sudoku = Sudoku()
+        self.sudoku = sudoku
 
         self.gbs = wx.GridBagSizer()
 
@@ -261,8 +261,8 @@ class MyPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
-        self.sudoku = Sudoku(self)
-        self.numbox = NumBox(self)
+        self.sudoku = Sudoku()
+        self.numbox = NumBox(self, self.sudoku)
         self.numpad = NumPad(self)
 
         self.OnSetNum = self.numbox.OnSetNum
