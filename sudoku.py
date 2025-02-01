@@ -9,83 +9,78 @@ class Sudoku:
     def __init__(self, data=None):
         self.data = data or [[0] * 9 for i in range(9)]
 
-    def row(self, r):
-        return self.data[r][:]
+    def GetRow(self, id):
+        return self.data[id][:]
 
-    def col(self, c):
-        return [row[c] for row in self.data]
+    def GetColumn(self, id):
+        return [row[id] for row in self.data]
 
-    def block(self, r, c):
-        r1 = r // 3 * 3
-        c1 = c // 3 * 3
-        return sum([row[c1:c1+3] for row in self.data[r1:r1+3]], [])
-
-    def block_rc(self, r, c):
+    def GetBlockRC(self, r, c):
         r1 = r // 3 * 3
         c1 = c // 3 * 3
         for r in range(r1, r1 + 3):
             for c in range(c1, c1 + 3):
                 yield r, c
 
-    def choices(self, r, c):
+    def GetBlock(self, *id):
+        if len(id) == 1:
+            r, c = divmod(id[0], 3)
+        elif len(id) == 2:  # r, c
+            r = id[0] // 3
+            c = id[1] // 3
+        return [self.data[r][c] for r, c in self.GetBlockRC(r * 3, c * 3)]
+
+    def GetPossibles(self, r, c):
         if not self.data[r][c]:
-            nums = self.row(r) + self.col(c) + self.block(r, c)
-            return sorted(set(range(1, 10)) - set(nums))
+            nums = self.GetRow(r) + self.GetColumn(c) + self.GetBlock(r, c)
+            return [num for num in range(1, 10) if num not in nums]
         else:
             return []
 
-    def repeat(self, ns):
-        for n in range(1, 10):
-            if ns.count(n) > 1:
-                return n
+    def CheckRepeat(self, nums):
+        for num in range(1, 10):
+            if nums.count(num) > 1:
+                return num
 
-    def error(self):
-        for r in range(9):
-            num = self.repeat(self.row(r))
+    def CheckError(self):
+        for i in range(9):
+            num = self.CheckRepeat(self.GetRow(i))
             if num:
-                return f'Error: Multiple num {num} in row {r + 1}'
-        for c in range(9):
-            num = self.repeat(self.col(c))
+                return f'Error: Multiple num {num} in row {i + 1}'
+            num = self.CheckRepeat(self.GetColumn(i))
             if num:
-                return f'Error: Multiple num {num} in column {c + 1}'
-        for r in range(3):
-            for c in range(3):
-                num = self.repeat(self.block(r * 3, c * 3))
-                if num:
-                    return f'Error: Multiple num {num} in block {r + 1}-{c + 1}'
+                return f'Error: Multiple num {num} in column {i + 1}'
+            num = self.CheckRepeat(self.GetBlock(i))
+            if num:
+                return f'Error: Multiple num {num} in block {i + 1}'
 
-    def finished(self):
-        return all(sum(self.data, [])) and not self.error()
+    def CheckFinished(self):
+        return all(sum(self.data, [])) and not self.CheckError()
 
-    def complete(self):
-        cnt = 0
-        while True:
-            exist = False
-            for r in range(9):
-                for c in range(9):
-                    if not self.data[r][c]:
-                        choices = self.choices(r, c)
-                        if len(choices) == 1:
-                            cnt += 1
-                            exist = True
-                            self.data[r][c] = choices[0]
-                        else:
-                            for n in self.choices(r, c):
-                                if sum(n in self.choices(r1, c) for r1 in range(9)) == 1:
-                                    cnt += 1
-                                    exist = True
-                                    self.data[r][c] = n
-                                elif sum(n in self.choices(r, c1) for c1 in range(9)) == 1:
-                                    cnt += 1
-                                    exist = True
-                                    self.data[r][c] = n
-                                elif sum(n in self.choices(r1, c1) for r1, c1 in self.block_rc(r, c)) == 1:
-                                    cnt += 1
-                                    exist = True
-                                    self.data[r][c] = n
-            if not exist:
-                break
-        return cnt
+    def SolveOne(self):
+        count = 0
+        for i in range(81):
+            r, c = divmod(i, 9)
+            if self.data[r][c]:
+                continue
+            possibles = self.GetPossibles(r, c)
+            if len(possibles) == 1:
+                self.data[r][c] = possibles[0]
+                count += 1
+            else:
+                for num in possibles:
+                    if (
+                        sum(num in self.GetPossibles(r2, c) for r2 in range(9)) == 1 or
+                        sum(num in self.GetPossibles(r, c2) for c2 in range(9)) == 1 or
+                        sum(num in self.GetPossibles(r2, c2) for r2, c2 in self.GetBlockRC(r, c)) == 1
+                    ):
+                        self.data[r][c] = num
+                        count += 1
+        return count
+
+    def Solve(self):
+        while self.SolveOne():
+            pass
 
 
 COLOUR_GRAY  = '#E0E0E0'
@@ -190,7 +185,7 @@ class NumBox(wx.Panel):
 
         if self.hint and evt.GetSelection():
             r, c = divmod(evt.GetId() - 200, 9)
-            nums = self.sudoku.row(r) + self.sudoku.col(c) + self.sudoku.block(r, c)
+            nums = self.sudoku.GetRow(r) + self.sudoku.GetColumn(c) + self.sudoku.GetBlock(r, c)
             for i in range(3):
                 nums.remove(self.sudoku.data[r][c])
             self.parent.SetEnables(set(range(1, 10)) - set(nums))
@@ -234,27 +229,27 @@ class NumBox(wx.Panel):
 
         if self.hint and n:
             for r in range(9):
-                if n in self.sudoku.row(r):
+                if n in self.sudoku.GetRow(r):
                     for c in range(9):
                         self.SetCellColour(r, c, COLOUR_GREEN)
 
             for c in range(9):
-                if n in self.sudoku.col(c):
+                if n in self.sudoku.GetColumn(c):
                     for r in range(9):
                         self.SetCellColour(r, c, COLOUR_GREEN)
 
             for r1 in range(0, 9, 3):
                 for c1 in range(0, 9, 3):
-                    if n in self.sudoku.block(r1, c1):
+                    if n in self.sudoku.GetBlock(r1, c1):
                         for r in range(r1, r1 + 3):
                             for c in range(c1, c1 + 3):
                                 self.SetCellColour(r, c, COLOUR_GREEN)
 
     def AutoComplete(self):
-        if self.sudoku.error():
+        if self.sudoku.CheckError():
             return "Exist error, can't auto complete."
-        if self.sudoku.complete():
-            self.SetData(self.sudoku.data)
+        self.sudoku.Solve()
+        self.SetData(self.sudoku.data)
 
 
 class MyPanel(wx.Panel):
@@ -289,7 +284,7 @@ class MyPanel(wx.Panel):
         btn1.Bind(wx.EVT_BUTTON, lambda e: self.numbox.SetLock())
         btn2.Bind(wx.EVT_BUTTON, lambda e: self.numbox.SetUnlock())
         btn5.Bind(wx.EVT_BUTTON, lambda e: self.numbox.AutoComplete())
-        btn6.Bind(wx.EVT_BUTTON, lambda e: wx.MessageBox(self.sudoku.error() or 'No error found!', 'Error'))
+        btn6.Bind(wx.EVT_BUTTON, lambda e: wx.MessageBox(self.sudoku.CheckError() or 'No error found!', 'Error'))
 
         box = wx.BoxSizer()
         box.Add(self.numbox)
