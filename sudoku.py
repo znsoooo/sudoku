@@ -175,6 +175,14 @@ class NumBox(wx.Panel):
         ])
         self.SetLock()
 
+    def GetItem(self, r, c):
+        assert (0, 0) <= (r, c) <= (8, 8), (r, c)
+        return wx.FindWindowById(200 + 9 * r + c, self)
+
+    def GetItems(self):
+        for i in range(81):
+            yield wx.FindWindowById(200 + i, self)
+
     def OnButton(self, evt):
         if self.prev:
             item = wx.FindWindowById(self.prev, self)
@@ -195,12 +203,10 @@ class NumBox(wx.Panel):
 
     def SetCell(self, r, c, n):
         self.sudoku.data[r][c] = n
-        item = wx.FindWindowById(200 + 9 * r + c, self)
-        item.SetLabel(str(n or ''))
+        self.GetItem(r, c).SetLabel(str(n or ''))
 
     def SetCellColour(self, r, c, colour):
-        item = wx.FindWindowById(200 + 9 * r + c, self)
-        item.SetBackgroundColour(colour)
+        self.GetItem(r, c).SetBackgroundColour(colour)
 
     def SetData(self, data):
         for r in range(9):
@@ -208,15 +214,19 @@ class NumBox(wx.Panel):
                 self.SetCell(r, c, data[r][c])
 
     def SetLock(self):
-        for item in self.gbs.GetChildren():
-            btn = item.GetWindow()
-            if btn.GetLabel():
-                btn.Disable()
+        for item in self.GetItems():
+            if item.GetLabel():
+                item.Disable()
 
     def SetUnlock(self):
-        for item in self.gbs.GetChildren():
-            btn = item.GetWindow()
-            btn.Enable()
+        for item in self.GetItems():
+            item.Enable()
+
+    def ClearUnlocked(self):
+        for i, item in enumerate(self.GetItems()):
+            if item.IsEnabled():
+                r, c = divmod(i, 9)
+                self.SetCell(r, c, 0)
 
     def OnSetNum(self, n):
         if self.prev:
@@ -267,8 +277,7 @@ class MyPanel(wx.Panel):
 
         btn1 = wx.Button(self, -1, '锁定')
         btn2 = wx.Button(self, -1, '解锁')
-        btn3 = wx.Button(self, -1, '报错')
-        btn4 = wx.Button(self, -1, '提示')
+        btn3 = wx.Button(self, -1, '清除')
         btn5 = wx.Button(self, -1, '自动')
         btn6 = wx.Button(self, -1, '检查')
 
@@ -278,12 +287,12 @@ class MyPanel(wx.Panel):
         toolbar.Add(btn1, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 5)
         toolbar.Add(btn2, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 5)
         toolbar.Add(btn3, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 5)
-        toolbar.Add(btn4, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 5)
         toolbar.Add(btn5, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 5)
         toolbar.Add(btn6, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 5)
 
         btn1.Bind(wx.EVT_BUTTON, lambda e: self.numbox.SetLock())
         btn2.Bind(wx.EVT_BUTTON, lambda e: self.numbox.SetUnlock())
+        btn3.Bind(wx.EVT_BUTTON, lambda e: self.numbox.ClearUnlocked())
         btn5.Bind(wx.EVT_BUTTON, lambda e: self.numbox.AutoComplete())
         btn6.Bind(wx.EVT_BUTTON, lambda e: wx.MessageBox(self.sudoku.CheckError() or 'No error found!', 'Error'))
 
