@@ -76,6 +76,7 @@ class Sudoku:
                     ):
                         self.data[r][c] = num
                         count += 1
+                        break
         return count
 
     def Solve(self):
