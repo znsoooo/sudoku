@@ -96,6 +96,7 @@ class Border(wx.Panel):
         box.Add((width, width), 1, wx.EXPAND)
         self.SetSizer(box)
         self.SetBackgroundColour(COLOUR_BLACK)
+        self.Disable()
 
 
 class NumPad(wx.Panel):
