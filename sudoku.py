@@ -105,34 +105,49 @@ class NumPad(wx.Panel):
         self.parent = parent
         self.gbs = wx.GridBagSizer(vgap=5, hgap=5)
 
-        for r in range(3):
-            for c in range(3):
-                n = 3 * r + c + 1
-                btn = wx.ToggleButton(self, 100 + n, str(n), size=(30, 30))
-                btn.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
-                self.gbs.Add(btn, (r, c), flag=wx.EXPAND)
+        for num in range(1, 10):
+            r, c = divmod(num - 1, 3)
+            btn = wx.ToggleButton(self, 100 + num, str(num), size=(30, 30))
+            btn.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
+            self.gbs.Add(btn, (2 - r, c), flag=wx.EXPAND)
+        parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyPress)
 
         box = wx.BoxSizer()
         box.Add(self.gbs, 1, wx.EXPAND | wx.ALL, 5)
         self.SetSizer(box)
 
+    def GetItem(self, num):
+        assert 1 <= num <= 9, num
+        return wx.FindWindowById(100 + num, self)
+
+    def ToggleButton(self, num):
+        assert 0 <= num <= 9, num
+        if num == 0:
+            self.SetSelection(0)
+        elif self.GetItem(num).IsEnabled():
+            self.SetSelection(0 if self.GetItem(num).GetValue() else num)
+
     def OnButton(self, evt):
-        n1 = evt.GetId() - 100
-        for n2 in range(1, 10):
-            if n1 != n2:
-                btn = wx.FindWindowById(100 + n2, self)
-                btn.SetValue(False)
-        self.parent.OnSetNum(evt.GetSelection() and n1)
+        btn = evt.GetEventObject()
+        btn.SetValue(not btn.GetValue())
+        self.ToggleButton(evt.GetId() - 100)
 
-    def SetSelection(self, n):
-        for n2 in range(1, 10):
-            btn = wx.FindWindowById(100 + n2, self)
-            btn.SetValue(n == n2)
+    def OnKeyPress(self, evt):
+        key = evt.GetKeyCode()
+        if wx.WXK_NUMPAD0 <= key <= wx.WXK_NUMPAD9:
+            self.ToggleButton(key - wx.WXK_NUMPAD0)
+        elif ord('0') <= key <= ord('9'):
+            self.ToggleButton(key - ord('0'))
+        evt.Skip()
 
-    def SetEnables(self, ns):
-        for n2 in range(1, 10):
-            btn = wx.FindWindowById(100 + n2, self)
-            btn.Enable(n2 in ns)
+    def SetSelection(self, num):
+        for num2 in range(1, 10):
+            self.GetItem(num2).SetValue(num == num2)
+        self.parent.OnSetNum(num)
+
+    def SetEnables(self, nums):
+        for num2 in range(1, 10):
+            self.GetItem(num2).Enable(num2 in nums)
 
 
 class NumBox(wx.Panel):
