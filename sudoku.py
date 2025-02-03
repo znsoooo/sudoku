@@ -84,17 +84,17 @@ class NumPad(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.parent = parent
-        self.gbs = wx.GridBagSizer(vgap=5, hgap=5)
 
+        gbs = wx.GridBagSizer(vgap=5, hgap=5)
         for num in range(1, 10):
             r, c = divmod(num - 1, 3)
             btn = wx.ToggleButton(self, 100 + num, str(num), size=(30, 30))
             btn.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
-            self.gbs.Add(btn, (2 - r, c), flag=wx.EXPAND)
+            gbs.Add(btn, (2 - r, c), flag=wx.EXPAND)
         parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyPress)
 
         box = wx.BoxSizer()
-        box.Add(self.gbs, 1, wx.EXPAND | wx.ALL, 5)
+        box.Add(gbs, 1, wx.EXPAND | wx.ALL, 5)
         self.SetSizer(box)
 
     def GetItem(self, num):
@@ -137,25 +137,23 @@ class NumBox(wx.Panel):
 
         self.parent = parent
 
-        self.hint = True
         self.prev = None
         self.sudoku = sudoku
 
-        self.gbs = wx.GridBagSizer()
-
+        gbs = wx.GridBagSizer()
         id = 200
         for r in range(13):
             for c in range(13):
-                if r in (0, 4, 8, 12) or c in (0, 4, 8, 12):
+                if r in [0, 4, 8, 12] or c in [0, 4, 8, 12]:
                     item = Border(self, 3)
                 else:
                     item = wx.ToggleButton(self, id, size=(30, 30))
                     item.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
                     id += 1
-                self.gbs.Add(item, (r, c), flag=wx.EXPAND)
+                gbs.Add(item, (r, c), flag=wx.EXPAND)
 
         box = wx.BoxSizer()
-        box.Add(self.gbs, 1, wx.EXPAND | wx.ALL, 5)
+        box.Add(gbs, 1, wx.EXPAND | wx.ALL, 5)
         self.SetSizer(box)
 
         self.SetData([
@@ -188,7 +186,7 @@ class NumBox(wx.Panel):
         btn = evt.GetEventObject()
         self.parent.SetSelection(int(btn.GetLabel() or 0))
 
-        if self.hint and evt.GetSelection():
+        if evt.GetSelection():
             r, c = divmod(evt.GetId() - 200, 9)
             nums = self.sudoku.GetRow(r) + self.sudoku.GetColumn(c) + self.sudoku.GetBlock(r, c)
             for i in range(3):
@@ -229,12 +227,11 @@ class NumBox(wx.Panel):
             r, c = divmod(self.prev - 200, 9)
             self.SetCell(r, c, n)
 
-        if self.hint:
-            for r in range(9):
-                for c in range(9):
-                    self.SetCellColour(r, c, COLOUR_GRAY)
+        for r in range(9):
+            for c in range(9):
+                self.SetCellColour(r, c, COLOUR_GRAY)
 
-        if self.hint and n:
+        if n:
             for r in range(9):
                 if n in self.sudoku.GetRow(r):
                     for c in range(9):
