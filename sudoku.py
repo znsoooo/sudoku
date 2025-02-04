@@ -160,19 +160,6 @@ class NumBox(wx.Panel):
         box.Add(gbs, 1, wx.EXPAND | wx.ALL, 5)
         self.SetSizer(box)
 
-        self.SetData([
-            [7, 0, 0, 0, 0, 4, 0, 0, 0],
-            [0, 4, 0, 0, 0, 5, 9, 0, 0],
-            [8, 0, 0, 0, 0, 0, 0, 2, 0],
-            [0, 0, 6, 0, 9, 0, 0, 0, 4],
-            [0, 1, 0, 0, 0, 0, 0, 3, 0],
-            [2, 0, 0, 0, 8, 0, 5, 0, 0],
-            [0, 5, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 3, 7, 0, 0, 0, 8, 0],
-            [0, 0, 0, 2, 0, 0, 0, 0, 6],
-        ])
-        self.SetLock()
-
     def GetItem(self, r, c):
         assert (0, 0) <= (r, c) <= (8, 8), (r, c)
         return wx.FindWindowById(200 + 9 * r + c, self)
@@ -268,6 +255,7 @@ class MyPanel(wx.Panel):
         self.numpad = NumPad(self)
         self.numbox = NumBox(self)
         self.numpad.numbox = self.numbox
+        self.numpad.SetSelection()
 
         btn1 = wx.Button(self, -1, '锁定')
         btn2 = wx.Button(self, -1, '自动')
@@ -293,17 +281,34 @@ class MyPanel(wx.Panel):
 class MyFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, -1, 'Sudoku')
+
         self.panel = MyPanel(self)
+
         size = self.panel.GetSize()
         self.SetClientSize(size)
         self.SetMaxClientSize(size)
         self.SetMinClientSize(size)
         self.EnableMaximizeButton(False)
+
         self.Center()
         self.Show()
 
 
 if __name__ == '__main__':
     app = wx.App()
-    frm = MyFrame()
+    frame = MyFrame()
+
+    frame.panel.numbox.SetData([
+        [7, 0, 0, 0, 0, 4, 0, 0, 0],
+        [0, 4, 0, 0, 0, 5, 9, 0, 0],
+        [8, 0, 0, 0, 0, 0, 0, 2, 0],
+        [0, 0, 6, 0, 9, 0, 0, 0, 4],
+        [0, 1, 0, 0, 0, 0, 0, 3, 0],
+        [2, 0, 0, 0, 8, 0, 5, 0, 0],
+        [0, 5, 0, 0, 0, 0, 0, 0, 1],
+        [0, 0, 3, 7, 0, 0, 0, 8, 0],
+        [0, 0, 0, 2, 0, 0, 0, 0, 6],
+    ])
+    frame.panel.numbox.SetLock()
+
     app.MainLoop()
