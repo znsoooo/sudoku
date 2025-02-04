@@ -293,6 +293,14 @@ class MyFrame(wx.Frame):
         self.Center()
         self.Show()
 
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyPress)
+
+    def OnKeyPress(self, evt):
+        key = evt.GetKeyCode()
+        if key == wx.WXK_ESCAPE:
+            self.Destroy()
+        evt.Skip()
+
 
 if __name__ == '__main__':
     app = wx.App()
