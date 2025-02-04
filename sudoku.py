@@ -86,6 +86,8 @@ class NumPad(wx.Panel):
         self.sudoku = parent.sudoku
         self.numbox = None
 
+        self.number = 0
+
         gbs = wx.GridBagSizer(vgap=5, hgap=5)
         for num in range(1, 10):
             r, c = divmod(num - 1, 3)
@@ -122,7 +124,8 @@ class NumPad(wx.Panel):
             self.ToggleButton(key - ord('0'))
         evt.Skip()
 
-    def SetSelection(self, num):
+    def SetSelection(self, num=None):
+        num = self.number = self.number if num is None else num
         for num2 in range(1, 10):
             self.GetItem(num2).SetValue(num == num2)
         self.numbox.OnSetNum(num)
@@ -222,6 +225,7 @@ class NumBox(wx.Panel):
             if item.IsEnabled():
                 r, c = divmod(i, 9)
                 self.SetCell(r, c, 0)
+        self.numpad.SetSelection()
 
     def OnSetNum(self, n):
         if self.prev:
@@ -253,6 +257,7 @@ class NumBox(wx.Panel):
     def AutoComplete(self):
         self.sudoku.Solve()
         self.SetData(self.sudoku.data)
+        self.numpad.SetSelection()
 
 
 class MyPanel(wx.Panel):
