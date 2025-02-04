@@ -83,7 +83,8 @@ class NumPad(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
-        self.parent = parent
+        self.sudoku = parent.sudoku
+        self.numbox = None
 
         gbs = wx.GridBagSizer(vgap=5, hgap=5)
         for num in range(1, 10):
@@ -124,7 +125,7 @@ class NumPad(wx.Panel):
     def SetSelection(self, num):
         for num2 in range(1, 10):
             self.GetItem(num2).SetValue(num == num2)
-        self.parent.OnSetNum(num)
+        self.numbox.OnSetNum(num)
 
     def SetEnables(self, nums):
         for num2 in range(1, 10):
@@ -132,13 +133,13 @@ class NumPad(wx.Panel):
 
 
 class NumBox(wx.Panel):
-    def __init__(self, parent, sudoku):
+    def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
-        self.parent = parent
+        self.sudoku = parent.sudoku
+        self.numpad = parent.numpad
 
         self.prev = None
-        self.sudoku = sudoku
 
         gbs = wx.GridBagSizer()
         id = 200
@@ -184,16 +185,16 @@ class NumBox(wx.Panel):
         self.prev = evt.GetSelection() and evt.GetId()
 
         btn = evt.GetEventObject()
-        self.parent.SetSelection(int(btn.GetLabel() or 0))
+        self.numpad.SetSelection(int(btn.GetLabel() or 0))
 
         if evt.GetSelection():
             r, c = divmod(evt.GetId() - 200, 9)
             nums = self.sudoku.GetRow(r) + self.sudoku.GetColumn(c) + self.sudoku.GetBlock(r, c)
             for i in range(3):
                 nums.remove(self.sudoku.data[r][c])
-            self.parent.SetEnables(set(range(1, 10)) - set(nums))
+            self.numpad.SetEnables(set(range(1, 10)) - set(nums))
         else:
-            self.parent.SetEnables(list(range(1, 10)))
+            self.numpad.SetEnables(list(range(1, 10)))
 
     def SetCell(self, r, c, n):
         self.sudoku.data[r][c] = n
@@ -259,12 +260,9 @@ class MyPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.sudoku = Sudoku()
-        self.numbox = NumBox(self, self.sudoku)
         self.numpad = NumPad(self)
-
-        self.OnSetNum = self.numbox.OnSetNum
-        self.SetEnables = self.numpad.SetEnables
-        self.SetSelection = self.numpad.SetSelection
+        self.numbox = NumBox(self)
+        self.numpad.numbox = self.numbox
 
         btn1 = wx.Button(self, -1, '锁定')
         btn2 = wx.Button(self, -1, '自动')
