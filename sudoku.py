@@ -77,11 +77,11 @@ class NumPad(wx.Panel):
         self.number = 0
 
         gbs = wx.GridBagSizer(vgap=5, hgap=5)
-        for num in range(1, 10):
-            row, col = divmod(num - 1, 3)
+        for row, col in itertools.product(range(3), repeat=2):
+            num = (2 - row) * 3 + col + 1
             btn = wx.ToggleButton(self, 100 + num, str(num), size=(30, 30))
             btn.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
-            gbs.Add(btn, (2 - row, col), flag=wx.EXPAND)
+            gbs.Add(btn, (row, col), flag=wx.EXPAND)
         parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyPress)
 
         box = wx.BoxSizer()
@@ -126,7 +126,7 @@ class NumBox(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.sudoku = parent.sudoku
-        self.numpad = parent.numpad
+        self.numpad = None
 
         self.prev = None
 
@@ -138,6 +138,7 @@ class NumBox(wx.Panel):
                 item = Border(self, 3)
             else:
                 item = wx.ToggleButton(self, id, size=(30, 30))
+                item.SetBackgroundColour(COLOUR_GRAY)
                 item.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
                 id += 1
             gbs.Add(item, (row, col), flag=wx.EXPAND)
@@ -225,10 +226,11 @@ class MyPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.sudoku = Sudoku()
+        self.numbox = NumBox(self)  # define first for right focus sequence
         self.numpad = NumPad(self)
-        self.numbox = NumBox(self)
+
+        self.numbox.numpad = self.numpad
         self.numpad.numbox = self.numbox
-        self.numpad.SetSelection()
 
         btn1 = wx.Button(self, -1, '锁定')
         btn2 = wx.Button(self, -1, '自动')
