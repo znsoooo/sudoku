@@ -1,13 +1,10 @@
-# TODO
-# 分割线 标色 数字小键盘
-# 编辑 清除 撤销 重做
-
 import wx
+import itertools
 
 
 class Sudoku:
     def __init__(self, data=None):
-        self.data = data or [[0] * 9 for i in range(9)]
+        self.data = data or [[0] * 9 for _ in range(9)]
 
     def GetRow(self, id):
         return self.data[id][:]
@@ -15,49 +12,40 @@ class Sudoku:
     def GetColumn(self, id):
         return [row[id] for row in self.data]
 
-    def GetBlockRC(self, r, c):
-        r1 = r // 3 * 3
-        c1 = c // 3 * 3
-        for r in range(r1, r1 + 3):
-            for c in range(c1, c1 + 3):
-                yield r, c
+    def GetBlockRC(self, row, col):
+        row2 = row // 3 * 3
+        col2 = col // 3 * 3
+        return itertools.product(range(row2, row2 + 3), range(col2, col2 + 3))
 
-    def GetBlock(self, *id):
-        if len(id) == 1:
-            r, c = divmod(id[0], 3)
-        elif len(id) == 2:  # r, c
-            r = id[0] // 3
-            c = id[1] // 3
-        return [self.data[r][c] for r, c in self.GetBlockRC(r * 3, c * 3)]
+    def GetBlock(self, row, col):
+        return [self.data[row][col] for row, col in self.GetBlockRC(row // 3 * 3, col // 3 * 3)]
 
-    def GetPossibles(self, r, c):
-        if not self.data[r][c]:
-            nums = self.GetRow(r) + self.GetColumn(c) + self.GetBlock(r, c)
+    def GetPossibles(self, row, col):
+        if not self.data[row][col]:
+            nums = self.GetRow(row) + self.GetColumn(col) + self.GetBlock(row, col)
             return [num for num in range(1, 10) if num not in nums]
         else:
             return []
 
+    def SetCell(self, row, col, num):
+        self.data[row][col] = num
+        return True
+
     def SolveOne(self):
-        count = 0
-        for i in range(81):
-            r, c = divmod(i, 9)
-            if self.data[r][c]:
+        for row, col in itertools.product(range(9), repeat=2):
+            if self.data[row][col]:
                 continue
-            possibles = self.GetPossibles(r, c)
+            possibles = self.GetPossibles(row, col)
             if len(possibles) == 1:
-                self.data[r][c] = possibles[0]
-                count += 1
+                return self.SetCell(row, col, possibles[0])
             else:
                 for num in possibles:
                     if (
-                        sum(num in self.GetPossibles(r2, c) for r2 in range(9)) == 1 or
-                        sum(num in self.GetPossibles(r, c2) for c2 in range(9)) == 1 or
-                        sum(num in self.GetPossibles(r2, c2) for r2, c2 in self.GetBlockRC(r, c)) == 1
+                        sum(num in self.GetPossibles(row2, col) for row2 in range(9)) == 1 or
+                        sum(num in self.GetPossibles(row, col2) for col2 in range(9)) == 1 or
+                        sum(num in self.GetPossibles(row2, col2) for row2, col2 in self.GetBlockRC(row, col)) == 1
                     ):
-                        self.data[r][c] = num
-                        count += 1
-                        break
-        return count
+                        return self.SetCell(row, col, num)
 
     def Solve(self):
         while self.SolveOne():
@@ -90,10 +78,10 @@ class NumPad(wx.Panel):
 
         gbs = wx.GridBagSizer(vgap=5, hgap=5)
         for num in range(1, 10):
-            r, c = divmod(num - 1, 3)
+            row, col = divmod(num - 1, 3)
             btn = wx.ToggleButton(self, 100 + num, str(num), size=(30, 30))
             btn.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
-            gbs.Add(btn, (2 - r, c), flag=wx.EXPAND)
+            gbs.Add(btn, (2 - row, col), flag=wx.EXPAND)
         parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyPress)
 
         box = wx.BoxSizer()
@@ -101,11 +89,9 @@ class NumPad(wx.Panel):
         self.SetSizer(box)
 
     def GetItem(self, num):
-        assert 1 <= num <= 9, num
         return wx.FindWindowById(100 + num, self)
 
     def ToggleButton(self, num):
-        assert 0 <= num <= 9, num
         if num == 0:
             self.SetSelection(0)
         elif self.GetItem(num).IsEnabled():
@@ -146,23 +132,22 @@ class NumBox(wx.Panel):
 
         gbs = wx.GridBagSizer()
         id = 200
-        for r in range(13):
-            for c in range(13):
-                if r in [0, 4, 8, 12] or c in [0, 4, 8, 12]:
-                    item = Border(self, 3)
-                else:
-                    item = wx.ToggleButton(self, id, size=(30, 30))
-                    item.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
-                    id += 1
-                gbs.Add(item, (r, c), flag=wx.EXPAND)
+        skip = range(0, 13, 4)
+        for row, col in itertools.product(range(13), repeat=2):
+            if row in skip or col in skip:
+                item = Border(self, 3)
+            else:
+                item = wx.ToggleButton(self, id, size=(30, 30))
+                item.Bind(wx.EVT_TOGGLEBUTTON, self.OnButton)
+                id += 1
+            gbs.Add(item, (row, col), flag=wx.EXPAND)
 
         box = wx.BoxSizer()
         box.Add(gbs, 1, wx.EXPAND | wx.ALL, 5)
         self.SetSizer(box)
 
-    def GetItem(self, r, c):
-        assert (0, 0) <= (r, c) <= (8, 8), (r, c)
-        return wx.FindWindowById(200 + 9 * r + c, self)
+    def GetItem(self, row, col):
+        return wx.FindWindowById(200 + 9 * row + col, self)
 
     def GetItems(self):
         for i in range(81):
@@ -178,25 +163,23 @@ class NumBox(wx.Panel):
         self.numpad.SetSelection(int(btn.GetLabel() or 0))
 
         if evt.GetSelection():
-            r, c = divmod(evt.GetId() - 200, 9)
-            nums = self.sudoku.GetRow(r) + self.sudoku.GetColumn(c) + self.sudoku.GetBlock(r, c)
-            for i in range(3):
-                nums.remove(self.sudoku.data[r][c])
+            row, col = divmod(evt.GetId() - 200, 9)
+            nums = self.sudoku.GetRow(row) + self.sudoku.GetColumn(col) + self.sudoku.GetBlock(row, col)
+            [nums.remove(self.sudoku.data[row][col]) for _ in range(3)]
             self.numpad.SetEnables(set(range(1, 10)) - set(nums))
         else:
             self.numpad.SetEnables(list(range(1, 10)))
 
-    def SetCell(self, r, c, n):
-        self.sudoku.data[r][c] = n
-        self.GetItem(r, c).SetLabel(str(n or ''))
+    def SetCell(self, row, col, num):
+        self.sudoku.SetCell(row, col, num)
+        self.GetItem(row, col).SetLabel(str(num or ''))
 
-    def SetCellColour(self, r, c, colour):
-        self.GetItem(r, c).SetBackgroundColour(colour)
+    def SetCellColour(self, row, col, colour):
+        self.GetItem(row, col).SetBackgroundColour(colour)
 
     def SetData(self, data):
-        for r in range(9):
-            for c in range(9):
-                self.SetCell(r, c, data[r][c])
+        for row, col in itertools.product(range(9), repeat=2):
+            self.SetCell(row, col, data[row][col])
 
     def SetLock(self):
         if any(item.IsEnabled() and item.GetLabel() for item in self.GetItems()):
@@ -210,36 +193,26 @@ class NumBox(wx.Panel):
     def ClearUnlocked(self):
         for i, item in enumerate(self.GetItems()):
             if item.IsEnabled():
-                r, c = divmod(i, 9)
-                self.SetCell(r, c, 0)
+                row, col = divmod(i, 9)
+                self.SetCell(row, col, 0)
         self.numpad.SetSelection()
 
-    def OnSetNum(self, n):
+    def OnSetNum(self, num):
         if self.prev:
-            r, c = divmod(self.prev - 200, 9)
-            self.SetCell(r, c, n)
+            row, col = divmod(self.prev - 200, 9)
+            self.SetCell(row, col, num)
 
-        for r in range(9):
-            for c in range(9):
-                self.SetCellColour(r, c, COLOUR_GRAY)
+        for row, col in itertools.product(range(9), repeat=2):
+            self.SetCellColour(row, col, COLOUR_GRAY)
 
-        if n:
-            for r in range(9):
-                if n in self.sudoku.GetRow(r):
-                    for c in range(9):
-                        self.SetCellColour(r, c, COLOUR_GREEN)
+        if not num:
+            return
 
-            for c in range(9):
-                if n in self.sudoku.GetColumn(c):
-                    for r in range(9):
-                        self.SetCellColour(r, c, COLOUR_GREEN)
-
-            for r1 in range(0, 9, 3):
-                for c1 in range(0, 9, 3):
-                    if n in self.sudoku.GetBlock(r1, c1):
-                        for r in range(r1, r1 + 3):
-                            for c in range(c1, c1 + 3):
-                                self.SetCellColour(r, c, COLOUR_GREEN)
+        for row, col in itertools.product(range(9), repeat=2):
+            if num in self.sudoku.GetRow(row) + self.sudoku.GetColumn(col) + self.sudoku.GetBlock(row, col):
+                self.SetCellColour(row, col, COLOUR_GREEN)
+            else:
+                self.SetCellColour(row, col, COLOUR_GRAY)
 
     def AutoComplete(self):
         self.sudoku.Solve()
@@ -284,12 +257,7 @@ class MyFrame(wx.Frame):
 
         self.panel = MyPanel(self)
 
-        size = self.panel.GetSize()
-        self.SetClientSize(size)
-        self.SetMaxClientSize(size)
-        self.SetMinClientSize(size)
-        self.EnableMaximizeButton(False)
-
+        self.SetFixedSize()
         self.Center()
         self.Show()
 
@@ -300,6 +268,13 @@ class MyFrame(wx.Frame):
         if key == wx.WXK_ESCAPE:
             self.Destroy()
         evt.Skip()
+
+    def SetFixedSize(self):
+        size = self.panel.GetSize()
+        self.SetClientSize(size)
+        self.SetMaxClientSize(size)
+        self.SetMinClientSize(size)
+        self.EnableMaximizeButton(False)
 
 
 if __name__ == '__main__':
